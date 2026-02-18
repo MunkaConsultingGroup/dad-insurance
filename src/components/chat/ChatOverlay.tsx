@@ -17,7 +17,7 @@ export default function ChatOverlay({ isOpen, onClose }: ChatOverlayProps) {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed inset-0 z-50 bg-white"
+          className="fixed inset-0 z-50 bg-white safe-area-inset"
         >
           <div className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">

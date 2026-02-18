@@ -35,16 +35,16 @@ export default function TextInput({ type = 'text', placeholder = 'Type here...',
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className="flex-1 px-4 py-3 rounded-full border-2 border-gray-200 focus:border-slate-700
-                   outline-none text-sm transition-colors duration-200
+        className="flex-1 px-4 py-3.5 rounded-full border-2 border-gray-200 focus:border-slate-700
+                   outline-none text-base transition-colors duration-200
                    disabled:opacity-50 disabled:cursor-not-allowed"
         autoFocus
       />
       <button
         onClick={handleSubmit}
         disabled={disabled || !value.trim()}
-        className="px-5 py-3 rounded-full bg-slate-700 text-white text-sm font-medium
-                   hover:bg-slate-800 transition-colors duration-200
+        className="px-6 py-3.5 rounded-full bg-slate-700 text-white text-base font-medium
+                   hover:bg-slate-800 active:bg-slate-900 transition-colors duration-200
                    disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Send

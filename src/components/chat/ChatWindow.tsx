@@ -253,8 +253,8 @@ export default function ChatWindow() {
     <div className="flex flex-col h-full bg-white">
       <ProgressBar current={stepsCompleted} total={TOTAL_STEPS} />
 
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-lg mx-auto">
+      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col justify-end">
+        <div className="w-full max-w-lg mx-auto">
           {messages.map((msg) => (
             <div key={msg.id}>
               <MessageBubble sender={msg.sender} text={msg.text} />
@@ -269,8 +269,8 @@ export default function ChatWindow() {
       </div>
 
       {!conversationDone && (
-        <div className="border-t border-gray-100 px-4 py-4">
-          <div className="max-w-lg mx-auto">
+        <div className="border-t border-gray-100 px-4 py-4 pb-[env(safe-area-inset-bottom,16px)]">
+          <div className="w-full max-w-lg mx-auto">
             {showOptions && lastBotMessage?.options && (
               <OptionButtons
                 options={lastBotMessage.options}

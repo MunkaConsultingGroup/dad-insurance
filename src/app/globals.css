@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Mobile-first: prevent zoom on input focus (iOS) */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Safe area support for notched devices */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Use dvh for full-height on mobile (accounts for browser chrome) */
+.min-h-svh {
+  min-height: 100svh;
+}
