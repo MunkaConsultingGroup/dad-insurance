@@ -30,6 +30,8 @@ export interface ChatMessage {
   options?: ConversationOption[];
   inputType?: InputType;
   rates?: CarrierQuote[];
+  selectedValue?: string;
+  selectedLabel?: string;
 }
 
 // --- Rate Types ---

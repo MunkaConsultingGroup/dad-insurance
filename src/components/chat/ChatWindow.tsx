@@ -202,6 +202,30 @@ export default function ChatWindow() {
     }
   };
 
+  // Handle inline option selection (Lemonade-style)
+  const handleInlineSelect = (msgId: string, value: string, label: string) => {
+    if (inputDisabled) return;
+
+    setInputDisabled(true);
+
+    // Mark the selected option on the message
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId ? { ...m, selectedValue: value, selectedLabel: label } : m
+      )
+    );
+
+    // Store answer
+    const newAnswers = { ...answers, [currentStepId]: value };
+    setAnswers(newAnswers);
+    setStepsCompleted((prev) => prev + 1);
+
+    // Process next step
+    const nextId = getNextStep(currentStepId, newAnswers, value);
+    setTimeout(() => processStep(nextId, newAnswers), 400);
+  };
+
+  // Handle text input responses (bottom bar)
   const handleUserResponse = (value: string, displayText?: string) => {
     const step = getStepById(currentStepId);
     if (!step || inputDisabled) return;
@@ -217,7 +241,7 @@ export default function ChatWindow() {
 
     setInputDisabled(true);
 
-    // Add user message
+    // Add user message bubble for text inputs
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -255,14 +279,14 @@ export default function ChatWindow() {
     setTimeout(() => processStep(nextId, newAnswers), 300);
   };
 
-  // Determine what input to show
+  // Only show bottom bar for text inputs and consent (not options)
   const currentStep = getStepById(currentStepId);
-  const showOptions = currentStep?.inputType === 'options' && !inputDisabled;
   const showTextInput =
     currentStep &&
     ['text', 'number', 'email', 'phone'].includes(currentStep.inputType) &&
     !inputDisabled;
   const showConsent = currentStep?.inputType === 'consent' && !inputDisabled;
+  const showBottomBar = !conversationDone && (showTextInput || showConsent);
 
   const inputTypeMap: Record<string, 'text' | 'number' | 'email' | 'tel'> = {
     text: 'text',
@@ -271,37 +295,44 @@ export default function ChatWindow() {
     phone: 'tel',
   };
 
-  const lastBotMessage = [...messages].reverse().find((m) => m.sender === 'bot');
-
   return (
     <div className="flex flex-col h-full bg-white">
       <ProgressBar current={stepsCompleted} total={TOTAL_STEPS} />
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col justify-start">
-        <div className="w-full max-w-lg mx-auto">
-          {messages.map((msg) => (
-            <div key={msg.id}>
-              <MessageBubble sender={msg.sender} text={msg.text} />
-              {msg.rates && msg.rates.length > 0 && <RateCard quotes={msg.rates} />}
-            </div>
-          ))}
+      <div className="relative flex-1 overflow-hidden">
+        {/* Top scroll fade */}
+        <div className="pointer-events-none absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent z-10" />
 
-          <AnimatePresence>{isTyping && <TypingIndicator />}</AnimatePresence>
+        <div className="h-full overflow-y-auto px-4 py-6 flex flex-col justify-start">
+          <div className="w-full max-w-lg mx-auto">
+            {messages.map((msg) => (
+              <div key={msg.id}>
+                <MessageBubble sender={msg.sender} text={msg.text} />
+                {msg.rates && msg.rates.length > 0 && <RateCard quotes={msg.rates} />}
 
-          <div ref={messagesEndRef} />
+                {/* Inline options — Lemonade style */}
+                {msg.options && msg.inputType === 'options' && (
+                  <div className="ml-10">
+                    <OptionButtons
+                      options={msg.options}
+                      onSelect={(value, label) => handleInlineSelect(msg.id, value, label)}
+                      selectedValue={msg.selectedValue}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <AnimatePresence>{isTyping && <TypingIndicator />}</AnimatePresence>
+
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
-      {!conversationDone && (
+      {showBottomBar && (
         <div className="border-t border-gray-100 px-4 py-4 pb-[env(safe-area-inset-bottom,16px)]">
           <div className="w-full max-w-lg mx-auto">
-            {showOptions && lastBotMessage?.options && (
-              <OptionButtons
-                options={lastBotMessage.options}
-                onSelect={(value, label) => handleUserResponse(value, label)}
-              />
-            )}
-
             {showTextInput && currentStep && (
               <TextInput
                 type={inputTypeMap[currentStep.inputType] || 'text'}

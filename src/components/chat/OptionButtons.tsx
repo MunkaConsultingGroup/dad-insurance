@@ -8,11 +8,34 @@ interface OptionButtonsProps {
   options: ConversationOption[];
   onSelect: (value: string, label: string) => void;
   disabled?: boolean;
+  selectedValue?: string;
 }
 
-export default function OptionButtons({ options, onSelect, disabled }: OptionButtonsProps) {
+export default function OptionButtons({ options, onSelect, disabled, selectedValue }: OptionButtonsProps) {
   const hasIcons = options.some((opt) => opt.icon);
 
+  // Selected state — show chosen answer as a compact right-aligned chip
+  if (selectedValue) {
+    const selected = options.find((o) => o.value === selectedValue);
+    if (!selected) return null;
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25 }}
+        className="flex justify-end mb-4 mt-1"
+      >
+        <div className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-700 text-white text-[14px] font-medium rounded-br-md">
+          {selected.icon && (
+            <OptionIcon name={selected.icon} className="text-slate-300 [&_svg]:w-5 [&_svg]:h-5" />
+          )}
+          {selected.label}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Icon card layout
   if (hasIcons) {
     const cols =
       options.length === 1 ? 'grid-cols-1 max-w-[200px] mx-auto' :
@@ -21,17 +44,17 @@ export default function OptionButtons({ options, onSelect, disabled }: OptionBut
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className={`grid ${cols} gap-3 mb-3`}
+        className={`grid ${cols} gap-3 mb-4 mt-2`}
       >
         {options.map((opt, i) => (
           <motion.button
             key={opt.value}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: i * 0.06 }}
+            transition={{ duration: 0.35, delay: 0.08 + i * 0.07, ease: [0.25, 0.46, 0.45, 0.94] }}
             onClick={() => onSelect(opt.value, opt.label)}
             disabled={disabled}
             className="flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border-2 border-gray-200
@@ -51,16 +74,20 @@ export default function OptionButtons({ options, onSelect, disabled }: OptionBut
     );
   }
 
+  // Plain pill buttons
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-wrap gap-2 mb-3 justify-center"
+      className="flex flex-wrap gap-2 mb-4 mt-2 justify-center"
     >
-      {options.map((opt) => (
-        <button
+      {options.map((opt, i) => (
+        <motion.button
           key={opt.value}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 + i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] }}
           onClick={() => onSelect(opt.value, opt.label)}
           disabled={disabled}
           className="px-5 py-3 rounded-full border-2 border-slate-700 text-slate-700 text-[15px] font-medium
@@ -69,7 +96,7 @@ export default function OptionButtons({ options, onSelect, disabled }: OptionBut
                      disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {opt.label}
-        </button>
+        </motion.button>
       ))}
     </motion.div>
   );
