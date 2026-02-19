@@ -56,7 +56,42 @@ export const leadCaptured = inngest.createFunction(
       });
     }
 
-    // Step 3: Send Slack notification (placeholder — wired in Task 4)
+    // Step 3: Send Slack notification
+    const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
+    if (slackWebhookUrl) {
+      await step.run('send-slack-notification', async () => {
+        const coverageFormatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 0,
+        }).format(event.data.coverageAmount);
+
+        const res = await fetch(slackWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: `🆕 New Lead: *${event.data.firstName}*`,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: [
+                    `*New Lead: ${event.data.firstName}*`,
+                    `Age: ${event.data.age} | Gender: ${event.data.gender}`,
+                    `Coverage: ${coverageFormatted} / ${event.data.termLength}yr term`,
+                    `Health: ${event.data.healthClass} | Smoker: ${event.data.smokerStatus}`,
+                    `Phone: ${event.data.phone} | Email: ${event.data.email}`,
+                    `ZIP: ${event.data.zip}`,
+                  ].join('\n'),
+                },
+              },
+            ],
+          }),
+        });
+        if (!res.ok) throw new Error(`Slack webhook failed: ${res.status}`);
+      });
+    }
 
     // Step 4: Update lead status
     await step.run('update-lead-status', async () => {
