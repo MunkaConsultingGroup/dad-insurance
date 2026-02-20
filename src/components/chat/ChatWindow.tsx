@@ -11,8 +11,11 @@ import TextInput from './TextInput';
 import RateCard from './RateCard';
 import ProgressBar from './ProgressBar';
 import ConsentCheckbox from './ConsentCheckbox';
+import PhoneCTA from './PhoneCTA';
+import VerifyCodeInput from './VerifyCodeInput';
 
 const TYPING_DELAY = 800;
+const DEFAULT_TERM = 20;
 const TOTAL_STEPS = conversationSteps.filter(
   (s) => s.inputType !== 'auto' && s.id !== 'rates_display'
 ).length;
@@ -106,7 +109,7 @@ export default function ChatWindow() {
             smoker: currentAnswers.smoker,
             health: currentAnswers.health,
             coverage: currentAnswers.coverage,
-            term: currentAnswers.term,
+            term: String(DEFAULT_TERM),
           });
           const res = await fetch(`/api/rates?${params}`);
           const data = await res.json();
@@ -122,10 +125,53 @@ export default function ChatWindow() {
         return;
       }
 
+      // Handle phone_cta step
+      if (step.inputType === 'phone_cta') {
+        addBotMessage(messageText);
+        const ctaMsg: ChatMessage = {
+          id: `cta-${Date.now()}-${Math.random()}`,
+          sender: 'bot',
+          text: '',
+          timestamp: Date.now(),
+          inputType: 'phone_cta',
+        };
+        setMessages((prev) => [...prev, ctaMsg]);
+        setCurrentStepId(stepId);
+        setConversationDone(true);
+        return;
+      }
+
+      // Handle verify_code step - send SMS then show input
+      if (step.inputType === 'verify_code') {
+        // Send verification SMS
+        try {
+          await fetch('/api/verify/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: currentAnswers.phone }),
+          });
+        } catch {
+          console.error('Failed to send verification SMS');
+        }
+
+        const msg: ChatMessage = {
+          id: `bot-${Date.now()}-${Math.random()}`,
+          sender: 'bot',
+          text: messageText,
+          timestamp: Date.now(),
+          inputType: 'verify_code',
+        };
+        setMessages((prev) => [...prev, msg]);
+        setCurrentStepId(stepId);
+        setInputDisabled(false);
+        return;
+      }
+
       // Handle auto-advance steps
       if (step.inputType === 'auto') {
         addBotMessage(messageText);
-        if (stepId === 'submitting') {
+        // Submit lead during calculating step
+        if (stepId === 'calculating') {
           await submitLead(currentAnswers);
         }
         await new Promise((r) => setTimeout(r, 1200));
@@ -175,7 +221,7 @@ export default function ChatWindow() {
           smokerStatus: currentAnswers.smoker,
           healthClass: currentAnswers.health,
           coverageAmount: parseInt(currentAnswers.coverage, 10),
-          termLength: parseInt(currentAnswers.term, 10),
+          termLength: DEFAULT_TERM,
           ratesShown: rates,
           firstName: currentAnswers.name,
           email: currentAnswers.email,
@@ -255,7 +301,7 @@ export default function ChatWindow() {
 
     setMessages((prev) =>
       prev.map((m) =>
-        m.id === msgId ? { ...m, selectedValue: 'true', selectedLabel: 'I agree' } : m
+        m.id === msgId ? { ...m, selectedValue: 'true', selectedLabel: 'I consent' } : m
       )
     );
 
@@ -265,6 +311,30 @@ export default function ChatWindow() {
 
     const nextId = getNextStep(currentStepId, newAnswers, 'true');
     setTimeout(() => processStep(nextId, newAnswers), 300);
+  };
+
+  // Phone verification success
+  const handleVerifyCode = (msgId: string, code: string) => {
+    setInputDisabled(true);
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId ? { ...m, selectedValue: code, selectedLabel: 'Verified' } : m
+      )
+    );
+
+    const newAnswers = { ...answers, phone_verify: code };
+    setAnswers(newAnswers);
+    setStepsCompleted((prev) => prev + 1);
+
+    const nextId = getNextStep(currentStepId, newAnswers, code);
+    setTimeout(() => processStep(nextId, newAnswers), 300);
+  };
+
+  // User wants to change their phone number
+  const handleChangeNumber = () => {
+    setInputDisabled(false);
+    processStep('phone', answers);
   };
 
   const inputTypeMap: Record<string, 'text' | 'number' | 'email' | 'tel'> = {
@@ -293,9 +363,26 @@ export default function ChatWindow() {
 
         <div className="h-full overflow-y-auto px-4 py-6 pb-[env(safe-area-inset-bottom,24px)] flex flex-col justify-start">
           <div className="w-full max-w-lg mx-auto">
+            {/* Centered Melissa avatar at top */}
+            <div className="flex flex-col items-center mb-6">
+              <img
+                src="/melissa-avatar.jpg"
+                alt="Melissa"
+                className="w-16 h-16 rounded-full object-cover shadow-md"
+              />
+              <span className="mt-2 text-sm font-medium text-gray-700">Melissa</span>
+            </div>
+
             {messages.map((msg) => (
               <div key={msg.id}>
-                <MessageBubble sender={msg.sender} text={msg.text} />
+                {/* Phone CTA inline */}
+                {msg.inputType === 'phone_cta' && !msg.text && (
+                  <div className="ml-10">
+                    <PhoneCTA />
+                  </div>
+                )}
+
+                {msg.text && <MessageBubble sender={msg.sender} text={msg.text} />}
                 {msg.rates && msg.rates.length > 0 && <RateCard quotes={msg.rates} />}
 
                 {/* Inline options */}
@@ -335,6 +422,35 @@ export default function ChatWindow() {
                   </div>
                 )}
 
+                {/* Inline verify code */}
+                {msg.inputType === 'verify_code' && (
+                  <div className="ml-10">
+                    {msg.selectedValue ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.25 }}
+                        className="flex justify-end mb-4 mt-1"
+                      >
+                        <div className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 text-white text-[14px] font-medium rounded-br-md">
+                          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                            <path d="M3 8l3.5 3.5L13 5" />
+                          </svg>
+                          Verified
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="mt-2">
+                        <VerifyCodeInput
+                          phone={answers.phone || ''}
+                          onVerified={(code) => handleVerifyCode(msg.id, code)}
+                          onChangeNumber={handleChangeNumber}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Inline consent */}
                 {msg.inputType === 'consent' && (
                   <div className="ml-10">
@@ -346,7 +462,7 @@ export default function ChatWindow() {
                         className="flex justify-end mb-4 mt-1"
                       >
                         <div className="px-4 py-2.5 rounded-2xl bg-slate-700 text-white text-[14px] font-medium rounded-br-md">
-                          I agree
+                          I consent
                         </div>
                       </motion.div>
                     ) : (

@@ -113,9 +113,9 @@ export const smokerMultipliers: Record<string, number> = {
 
 // Coverage amount multipliers (base is $250K)
 export const coverageMultipliers: Record<number, number> = {
-  100000: 0.45,
   250000: 1.0,
   500000: 1.90,
   750000: 2.75,
   1000000: 3.50,
+  1500000: 5.0,
 };

@@ -1,28 +1,108 @@
 import { ConversationStep, ConversationAnswers, ConversationOption } from './types';
 
+const isForSelf = (answers: ConversationAnswers) => answers.for_whom !== 'other';
+
 export const conversationSteps: ConversationStep[] = [
   {
     id: 'welcome',
-    message: "Hi! I'm Melissa. I help dads like you find affordable life insurance so your family is always protected. This takes about 2 minutes \u2014 no spam, no pressure. Ready?",
+    message:
+      "Hi! I'm Melissa. I help dads like you find affordable life insurance so your family is always protected. This takes about two minutes to complete. Ready to get started?",
+    inputType: 'options',
+    options: [{ label: "Let's do it", value: 'yes' }],
+    next: 'for_whom',
+  },
+
+  // --- Insurance questions first (sunk cost) ---
+  {
+    id: 'for_whom',
+    message: 'Is this life insurance policy for you or for someone else?',
     inputType: 'options',
     options: [
-      { label: "Let's do it", value: 'yes' },
-      { label: 'Tell me more first', value: 'more' },
+      { label: 'For me', value: 'self' },
+      { label: 'For someone else', value: 'other' },
     ],
-    next: (_answers, value) => (value === 'more' ? 'explainer' : 'name'),
+    next: 'gender',
   },
   {
-    id: 'explainer',
-    message: "I'll ask a few quick questions, then show you estimated rates from top-rated carriers. Most dads are surprised how affordable it is. If you like what you see, a licensed agent can lock in your exact rate. Your info stays private until you say otherwise.",
+    id: 'gender',
+    message: (answers) =>
+      isForSelf(answers)
+        ? "What's your gender? (This affects life insurance rates.)"
+        : "What's their gender? (This affects life insurance rates.)",
     inputType: 'options',
-    options: [{ label: 'Sounds good', value: 'ok' }],
+    options: [
+      { label: 'Male', value: 'male', icon: 'male' },
+      { label: 'Female', value: 'female', icon: 'female' },
+    ],
+    next: 'smoker',
+  },
+  {
+    id: 'smoker',
+    message: (answers) =>
+      isForSelf(answers)
+        ? 'Do you use any tobacco products?'
+        : 'Do they use any tobacco products?',
+    inputType: 'options',
+    options: [
+      { label: 'No, never', value: 'never', icon: 'noSmoking' },
+      { label: 'I quit recently', value: 'former', icon: 'clock' },
+      { label: 'Yes', value: 'current', icon: 'cigarette' },
+    ],
+    next: (_answers, value) => (value === 'current' ? 'smoker_note' : 'health'),
+  },
+  {
+    id: 'smoker_note',
+    message:
+      "No worries, I can still find options. Just know that tobacco use does impact rates. Some carriers offer better rates for smokers than others, so it's still worth comparing.",
+    inputType: 'auto',
+    next: 'health',
+  },
+  {
+    id: 'health',
+    message: (answers) =>
+      isForSelf(answers)
+        ? 'How would you describe your overall health?'
+        : 'How would you describe their overall health?',
+    inputType: 'options',
+    options: [
+      { label: 'Excellent', value: 'preferred_plus', icon: 'hearts5' },
+      { label: 'Great', value: 'preferred', icon: 'hearts4' },
+      { label: 'Good', value: 'standard_plus', icon: 'hearts3' },
+      { label: 'Could be better', value: 'standard', icon: 'hearts1' },
+    ],
+    next: 'coverage',
+  },
+  {
+    id: 'coverage',
+    message: 'How much coverage are you looking for?',
+    inputType: 'options',
+    options: [
+      { label: '$250,000', value: '250000' },
+      { label: '$500,000', value: '500000' },
+      { label: '$750,000', value: '750000' },
+      { label: '$1,000,000', value: '1000000' },
+      { label: '$1,000,000+', value: '1500000' },
+    ],
+    next: 'timing',
+  },
+  {
+    id: 'timing',
+    message: 'How soon are you wanting to get this policy started?',
+    inputType: 'options',
+    options: [
+      { label: 'Right away', value: 'right_away' },
+      { label: 'Within a month', value: 'within_month' },
+      { label: 'In a few months', value: 'few_months' },
+      { label: "I'm not sure", value: 'not_sure' },
+    ],
     next: 'name',
   },
 
-  // --- Contact info upfront ---
+  // --- Personal info (after insurance questions) ---
   {
     id: 'name',
-    message: "Awesome! What's your first name?",
+    message:
+      "Just a couple pieces of personal info so we can tailor this quote to you. What's your first name?",
     inputType: 'text',
     validation: (value) => {
       if (!value.trim() || value.trim().length < 1) return 'Please enter your name.';
@@ -32,7 +112,7 @@ export const conversationSteps: ConversationStep[] = [
   },
   {
     id: 'email',
-    message: (answers) => `Nice to meet you, ${answers.name}! What's the best email to reach you?`,
+    message: (answers) => `Perfect, ${answers.name}! What's the best email to reach you?`,
     inputType: 'email',
     validation: (value) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,13 +123,20 @@ export const conversationSteps: ConversationStep[] = [
   },
   {
     id: 'phone',
-    message: "And what's the best phone number?",
+    message: "And what's the best phone number for us to contact you?",
     inputType: 'phone',
     validation: (value) => {
       const cleaned = value.replace(/\D/g, '');
       if (cleaned.length < 10) return 'Please enter a valid 10-digit phone number.';
       return null;
     },
+    next: 'phone_verify',
+  },
+  {
+    id: 'phone_verify',
+    message: (answers) =>
+      `We just sent a verification code to ${answers.phone}. Can you check your texts and enter it below?`,
+    inputType: 'verify_code',
     next: 'zip',
   },
   {
@@ -63,133 +150,54 @@ export const conversationSteps: ConversationStep[] = [
     },
     next: 'age',
   },
-
-  // --- Insurance questions (personalized) ---
   {
     id: 'age',
-    message: (answers) => `Perfect, ${answers.name}! Now let's find your rates. How old are you?`,
+    message: (answers) =>
+      isForSelf(answers)
+        ? 'Last question, how old are you?'
+        : 'Last question, how old are they?',
     inputType: 'number',
     validation: (value) => {
       const n = parseInt(value, 10);
       if (isNaN(n) || n < 18 || n > 85) return 'Please enter an age between 18 and 85.';
       return null;
     },
-    next: 'gender',
+    next: 'consent',
+  },
+
+  // --- Consent BEFORE quotes ---
+  {
+    id: 'consent',
+    message: (answers) =>
+      `All set, ${answers.name}. I have some quotes ready for you. Before I can show them, please confirm the following:`,
+    inputType: 'consent',
+    next: (_answers, value) => (value === 'decline' ? 'soft_decline' : 'calculating'),
   },
   {
-    id: 'gender',
-    message: "What's your gender? (This affects life insurance rates.)",
-    inputType: 'options',
-    options: [
-      { label: 'Male', value: 'male', icon: 'male' },
-      { label: 'Female', value: 'female', icon: 'female' },
-    ],
-    next: 'smoker',
-  },
-  {
-    id: 'smoker',
-    message: 'Do you use any tobacco products?',
-    inputType: 'options',
-    options: [
-      { label: 'No, never', value: 'never', icon: 'noSmoking' },
-      { label: 'I quit recently', value: 'former', icon: 'clock' },
-      { label: 'Yes', value: 'current', icon: 'cigarette' },
-    ],
-    next: (_answers, value) => (value === 'current' ? 'smoker_note' : 'health'),
-  },
-  {
-    id: 'smoker_note',
-    message: "No worries \u2014 I can still find you options. Just know that tobacco use does significantly impact rates. Some carriers offer better rates for smokers than others, so it's still worth comparing.",
+    id: 'soft_decline',
+    message: (answers) =>
+      `No problem at all, ${answers.name}! When you're ready to protect your family, just come back anytime.`,
     inputType: 'auto',
-    next: 'health',
-  },
-  {
-    id: 'health',
-    message: (answers) => `How would you describe your overall health, ${answers.name}?`,
-    inputType: 'options',
-    options: [
-      { label: 'Excellent', value: 'preferred_plus', icon: 'heartPlus' },
-      { label: 'Good', value: 'preferred', icon: 'heart' },
-      { label: 'Average', value: 'standard_plus', icon: 'heartHalf' },
-      { label: 'Below average', value: 'standard', icon: 'heartMinus' },
-    ],
-    next: 'coverage',
-  },
-  {
-    id: 'coverage',
-    message: 'How much coverage are you looking for?',
-    inputType: 'options',
-    options: [
-      { label: '$100,000', value: '100000', icon: 'shield100' },
-      { label: '$250,000', value: '250000', icon: 'shield250' },
-      { label: '$500,000', value: '500000', icon: 'shield500' },
-      { label: '$750,000', value: '750000', icon: 'shield750' },
-      { label: '$1,000,000', value: '1000000', icon: 'shieldMax' },
-    ],
-    next: 'term',
-  },
-  {
-    id: 'term',
-    message: 'And for how many years do you need coverage?',
-    inputType: 'options',
-    options: (answers: ConversationAnswers): ConversationOption[] => {
-      const age = parseInt(answers.age, 10);
-      const opts: ConversationOption[] = [
-        { label: '10 years', value: '10', icon: 'cal10' },
-        { label: '15 years', value: '15', icon: 'cal15' },
-        { label: '20 years', value: '20', icon: 'cal20' },
-      ];
-      if (age <= 60) opts.push({ label: '25 years', value: '25', icon: 'cal25' });
-      if (age <= 55) opts.push({ label: '30 years', value: '30', icon: 'cal30' });
-      return opts;
-    },
-    next: 'calculating',
+    next: 'done',
   },
   {
     id: 'calculating',
-    message: (answers) => `Great choices, ${answers.name}! Let me crunch the numbers...`,
+    message: (answers) => `One moment, ${answers.name}. Let me crunch the numbers...`,
     inputType: 'auto',
     next: 'rates_display',
   },
   {
     id: 'rates_display',
-    message: (answers) => `Here's what I found for you, ${answers.name}. These are estimated monthly rates from top-rated carriers \u2014 that's the cost of keeping your family protected:`,
-    inputType: 'rates_display',
-    next: 'lead_intro',
-  },
-  {
-    id: 'lead_intro',
-    message: (answers) => `${answers.name}, want to lock in your exact rate? A licensed agent will confirm your price and help you get covered \u2014 so your kids and family are always taken care of. No obligation.`,
-    inputType: 'options',
-    options: [
-      { label: 'Yes, connect me', value: 'yes', icon: 'handshake' },
-      { label: 'Not right now', value: 'no', icon: 'wave' },
-    ],
-    next: (_answers, value) => (value === 'no' ? 'soft_decline' : 'consent'),
-  },
-  {
-    id: 'soft_decline',
-    message: (answers) => `No problem at all, ${answers.name}! Your estimated rates are saved. When you're ready to protect your family, just come back anytime.`,
-    inputType: 'auto',
-    next: 'done',
-  },
-  {
-    id: 'consent',
-    message: (answers) => `Almost done, ${answers.name}! Please review and confirm below so a licensed agent can reach out.`,
-    inputType: 'consent',
-    next: 'submitting',
-  },
-  {
-    id: 'submitting',
-    message: 'Submitting your information...',
-    inputType: 'auto',
-    next: 'confirmation',
-  },
-  {
-    id: 'confirmation',
     message: (answers) =>
-      `You're all set, ${answers.name}! A licensed agent will reach out within 24 hours to confirm your rates and help get your family covered. They'll have your profile, so you won't need to repeat anything. Your family is in good hands.`,
-    inputType: 'auto',
+      `Here's what I found for you, ${answers.name}. These are estimated monthly rates from top-rated carriers:`,
+    inputType: 'rates_display',
+    next: 'lock_in',
+  },
+  {
+    id: 'lock_in',
+    message: (answers) =>
+      `${answers.name}, if you want to lock in this rate, you can speak to a representative right now. Just tap the number below and we can connect you right away.`,
+    inputType: 'phone_cta',
     next: 'done',
   },
 ];

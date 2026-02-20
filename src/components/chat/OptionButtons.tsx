@@ -14,7 +14,7 @@ interface OptionButtonsProps {
 export default function OptionButtons({ options, onSelect, disabled, selectedValue }: OptionButtonsProps) {
   const hasIcons = options.some((opt) => opt.icon);
 
-  // Selected state — compact right-aligned answer chip
+  // Selected state -compact right-aligned answer chip
   if (selectedValue) {
     const selected = options.find((o) => o.value === selectedValue);
     if (!selected) return null;
@@ -35,7 +35,7 @@ export default function OptionButtons({ options, onSelect, disabled, selectedVal
     );
   }
 
-  // Icon card layout — bigger cards
+  // Icon card layout -bigger cards
   if (hasIcons) {
     const cols =
       options.length === 1 ? 'grid-cols-1 max-w-[220px] mx-auto' :

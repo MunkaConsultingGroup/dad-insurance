@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       console.error('Slack notification failed:', e);
     }
 
-    // Fire Inngest event (non-fatal — for future webhook/email pipeline)
+    // Fire Inngest event (non-fatal, for future webhook/email pipeline)
     try {
       await inngest.send({
         name: 'lead/captured',

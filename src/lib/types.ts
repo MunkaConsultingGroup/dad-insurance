@@ -1,6 +1,6 @@
 // --- Conversation Types ---
 
-export type InputType = 'auto' | 'options' | 'text' | 'number' | 'email' | 'phone' | 'consent' | 'rates_display';
+export type InputType = 'auto' | 'options' | 'text' | 'number' | 'email' | 'phone' | 'consent' | 'rates_display' | 'phone_cta' | 'verify_code';
 
 export interface ConversationOption {
   label: string;

@@ -8,7 +8,7 @@ interface ConsentCheckboxProps {
 }
 
 const CONSENT_TEXT =
-  'By checking this box, I agree to be contacted by a licensed insurance agent at the phone number provided, including by autodialer, prerecorded message, or email. I understand this is not a condition of any purchase. I also agree to the Privacy Policy and Terms of Service.';
+  'By checking this box, I consent to receiving estimated life insurance quotes. I understand these quotes are estimates and not a final locked-in rate. I agree to be contacted by a licensed insurance agent at the phone number provided, including by autodialer, prerecorded message, or email, to help me lock in a final rate or explore additional coverage options for my family. This is not a condition of any purchase. I also agree to the Privacy Policy and Terms of Service.';
 
 export default function ConsentCheckbox({ onConsent, disabled }: ConsentCheckboxProps) {
   const [checked, setChecked] = useState(false);
@@ -32,7 +32,7 @@ export default function ConsentCheckbox({ onConsent, disabled }: ConsentCheckbox
                    hover:bg-slate-800 transition-colors duration-200
                    disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Submit
+        Yes, I consent
       </button>
     </div>
   );
