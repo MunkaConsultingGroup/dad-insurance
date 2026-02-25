@@ -68,6 +68,7 @@ export interface LeadData {
   healthClass: string;
   coverageAmount: number;
   termLength: number;
+  householdIncome?: string;
   ratesShown: CarrierQuote[];
 
   firstName: string;

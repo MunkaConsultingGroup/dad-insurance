@@ -17,6 +17,7 @@ model Lead {
   healthClass    String
   coverageAmount Int
   termLength     Int
+  householdIncome String?
 
   ratesShown     String   // JSON string of CarrierQuote[]
 

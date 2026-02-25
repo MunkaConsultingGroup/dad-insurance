@@ -222,6 +222,7 @@ export default function ChatWindow() {
           healthClass: currentAnswers.health,
           coverageAmount: parseInt(currentAnswers.coverage, 10),
           termLength: DEFAULT_TERM,
+          householdIncome: currentAnswers.income || '',
           ratesShown: rates,
           firstName: currentAnswers.name,
           email: currentAnswers.email,

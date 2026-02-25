@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
         healthClass: body.healthClass,
         coverageAmount: body.coverageAmount,
         termLength: body.termLength,
+        householdIncome: body.householdIncome || null,
         ratesShown: JSON.stringify(body.ratesShown),
         firstName: body.firstName,
         email: body.email,
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
           healthClass: body.healthClass,
           coverageAmount: body.coverageAmount,
           termLength: body.termLength,
+          householdIncome: body.householdIncome,
           ratesShown: JSON.stringify(body.ratesShown),
         },
       });
