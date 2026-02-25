@@ -6,9 +6,9 @@ describe('conversation engine', () => {
     expect(first.id).toBe('welcome');
   });
 
-  it('has a confirmation step at the end', () => {
+  it('ends with the lock_in step', () => {
     const last = conversationSteps[conversationSteps.length - 1];
-    expect(last.id).toBe('confirmation');
+    expect(last.id).toBe('lock_in');
   });
 
   it('getStepById returns the correct step', () => {
@@ -18,19 +18,29 @@ describe('conversation engine', () => {
     expect(step!.inputType).toBe('number');
   });
 
-  it('getNextStep progresses from welcome to age', () => {
+  it('getNextStep progresses from welcome to for_whom', () => {
     const next = getNextStep('welcome', {}, 'yes');
-    expect(next).toBe('age');
+    expect(next).toBe('for_whom');
   });
 
-  it('limits term options for age > 70', () => {
-    const step = getStepById('term');
-    expect(step).toBeDefined();
-    const answers = { age: '72' };
-    const options = typeof step!.options === 'function' ? step!.options(answers) : step!.options;
-    const values = options!.map((o) => o.value);
-    expect(values).not.toContain('25');
-    expect(values).not.toContain('30');
+  it('income step exists with 5 options after coverage', () => {
+    const coverageStep = getStepById('coverage');
+    expect(coverageStep).toBeDefined();
+    expect(coverageStep!.next).toBe('income');
+
+    const incomeStep = getStepById('income');
+    expect(incomeStep).toBeDefined();
+    expect(incomeStep!.inputType).toBe('options');
+    const options = incomeStep!.options as { label: string; value: string }[];
+    expect(options).toHaveLength(5);
+    expect(options.map(o => o.value)).toEqual([
+      'under_30k', '30k_50k', '50k_75k', '75k_100k', 'over_100k',
+    ]);
+  });
+
+  it('income step flows to timing', () => {
+    const next = getNextStep('income', {}, 'over_100k');
+    expect(next).toBe('timing');
   });
 
   it('all steps have valid next references', () => {
