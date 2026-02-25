@@ -14,6 +14,12 @@ import ConsentCheckbox from './ConsentCheckbox';
 import PhoneCTA from './PhoneCTA';
 import VerifyCodeInput from './VerifyCodeInput';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 const TYPING_DELAY = 800;
 const DEFAULT_TERM = 20;
 const TOTAL_STEPS = conversationSteps.filter(
@@ -242,6 +248,23 @@ export default function ChatWindow() {
           landingPage: utmParams.current.landingPage,
         }),
       });
+
+      // Fire Meta Pixel events
+      if (typeof window.fbq === 'function') {
+        // Always fire Lead event for every submission
+        window.fbq('track', 'Lead');
+
+        // Fire QualifiedLead only for premium/standard tier leads
+        const age = parseInt(currentAnswers.age, 10);
+        const isQualifiedAge = age >= 35 && age <= 55;
+        const isNonSmoker = currentAnswers.smoker === 'never' || currentAnswers.smoker === 'former';
+        const hasHighCoverage = parseInt(currentAnswers.coverage, 10) >= 250000;
+        const hasHighIncome = ['50k_75k', '75k_100k', 'over_100k'].includes(currentAnswers.income);
+
+        if (isQualifiedAge && isNonSmoker && hasHighCoverage && hasHighIncome) {
+          window.fbq('trackCustom', 'QualifiedLead');
+        }
+      }
     } catch {
       console.error('Failed to submit lead');
     }
